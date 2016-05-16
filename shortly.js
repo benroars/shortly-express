@@ -25,7 +25,8 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/', 
 function(req, res) {
-  res.render('index');
+  res.render('index'); //looks inside the view folder for this specific file index.ejs //the partials get 'included' in the .ejs files 
+                        // if we have repeated code (uses templating)
 });
 
 app.get('/create', 
@@ -35,7 +36,7 @@ function(req, res) {
 
 app.get('/links', 
 function(req, res) {
-  Links.reset().fetch().then(function(links) {
+  Links.reset().fetch().then(function(links) {  //links is a collection of link models
     res.status(200).send(links.models);
   });
 });
@@ -76,7 +77,15 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+app.get('/login', 
+function(req, res) {
+  res.render('index');
+});
 
+app.get('/signup', 
+function(req, res) {
+  res.render('index');
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
