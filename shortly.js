@@ -23,13 +23,22 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
-app.get('/', 
+var isAuthenticated = function (req, res, next) {
+  // if(false) {
+  //   return next();
+  // }
+
+  res.redirect('/login');
+};
+
+
+app.get('/',
 function(req, res) {
   res.render('index'); //looks inside the view folder for this specific file index.ejs //the partials get 'included' in the .ejs files 
                         // if we have repeated code (uses templating)
 });
 
-app.get('/create', 
+app.get('/create', isAuthenticated,
 function(req, res) {
   res.render('index');
 });
