@@ -26,19 +26,72 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
-/************************************************************/
-// Write your authentication routes here
-/************************************************************/
+var passport = require('passport');
+var GitHubStrategy = require('passport-github').Strategy;
+
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function(obj, done) {
+  done(null, obj);
+});
+
+passport.use(new GitHubStrategy({
+    clientID: 'e366776c52f1e9503ff4',
+    clientSecret: '46cec6aa24b530fc2d398d373be56e3fd8d82142',
+    callbackURL: "http://127.0.0.1:4568/auth/github/callback"
+  },
+  function(accessToken, refreshToken, profile, done) {
+    return done(null, profile.id);
+  }
+));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.get('/login', 
 function(req, res) {
   res.render('login');
 });
 
-app.get('/signup', 
-function(req, res) {
-  res.render('signup');
+/************************************************************/
+// Write your authentication routes here
+/************************************************************/
+
+app.get('/auth/github',
+  passport.authenticate('github', { scope: [ 'user:email' ] }),
+  function(req, res){
+    // The request will be redirected to GitHub for authentication, so this
+    // function will not be called.
 });
+
+
+app.get('/auth/github/callback', 
+  passport.authenticate('github', { failureRedirect: '/login' }),
+  function(req, res) {
+    console.log('AUTHENTICATED...');
+    req.session.isAuth = true;
+    res.redirect('/');
+});
+
+app.use(function(req, res, next) {
+  //var sess = req.session;
+  //console.log(sess.username);
+  console.log(req.session);
+  if (!req.session.isAuth) {
+    res.redirect('auth/github');
+  } else {
+    next();
+  }
+});
+
+
+
+// app.get('/signup', 
+// function(req, res) {
+//   res.render('signup');
+// });
 
 
 app.post('/login', function(req, res) {
@@ -98,22 +151,17 @@ app.post('/signup', function(req, res, done) {
 // Check every endpoint below this line for user authentication ---------------------------
 // ----------------------------------------------------------------------------------------
 
-app.use(function(req, res, next) {
-  var sess = req.session;
-  console.log(sess.username);
-  if (!sess.username) {
-    res.redirect('login');
-    //res.end();
-  } else {
-    next();
-  }
-});
+
 
 
 // Pages that require authentication
 
 app.get('/', function(req, res) {
-  res.render('index');
+ // if(!req.session.isAuth) {
+ //   res.redirect('/login');
+ // } else {
+    res.render('index');
+  //}
 });
 
 app.get('/logout', 
