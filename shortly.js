@@ -25,26 +25,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-// var isAuthenticated = function (req, res, next, fail) {
-//   var sess = req.session;
-//   if (!sess.username) { //check db for valid entry otherwise redirect
-//     fail();
-//   } else {
-//     console.log('Authenticated as:', sess.username);
-//     next();
-//   }
-// };
-
-// var ifNotAuthenticatedSendToLogin = function(req, res, successRenderPage) {
-//   isAuthenticated(req, res, function() {
-//     console.log('rendering', successRenderPage);
-//     res.render(successRenderPage);
-//   }, function() {
-//     console.log('redirecting to login');
-//     res.redirect('login');
-//     res.end();  
-//   });
-// };
 
 /************************************************************/
 // Write your authentication routes here
@@ -59,6 +39,7 @@ app.get('/signup',
 function(req, res) {
   res.render('signup');
 });
+
 
 app.post('/login', function(req, res) {
 
@@ -78,6 +59,8 @@ app.post('/login', function(req, res) {
     } else {
       console.log('Invalid username / password');
       res.redirect('login');
+      //res.writeHead(301, {'Location': '/login'})
+      //res.end();
     }
   })
   .catch(e => console.log('ERROR', e));
@@ -131,6 +114,14 @@ app.use(function(req, res, next) {
 
 app.get('/', function(req, res) {
   res.render('index');
+});
+
+app.get('/logout', 
+function(req, res) {
+  console.log('at the logout');
+  req.session.destroy();
+  res.render('login');
+
 });
 
 app.get('/create', function(req, res) {

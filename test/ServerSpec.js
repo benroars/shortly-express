@@ -65,10 +65,21 @@ describe('', function() {
 
     beforeEach(function(done) {
       // create a user that we can then log-in with
-      new User({
-        'username': 'Phillip',
-        'password': 'Phillip'
-      }).save().then(function() {
+      // new User({
+      //   'username': 'Phillip',
+      //   'password': 'Phillip'
+      // }).save().then(function() {
+      var options = {
+        'method': 'POST',
+        'followAllRedirects': true,
+        'uri': 'http://127.0.0.1:4568/signup',
+        'json': {
+          'username': 'Phillip',
+          'password': 'Phillip'
+        }
+      };
+        // login via form and save session info
+      requestWithSession(options, function(error, res, body) {
         var options = {
           'method': 'POST',
           'followAllRedirects': true,
@@ -339,7 +350,7 @@ describe('', function() {
       };
 
       requestWithSession(options, function(error, res, body) {
-        expect(res.headers.location).to.equal('/login');
+        expect(res.headers.location).to.equal('login');
         done();
       });
     });
