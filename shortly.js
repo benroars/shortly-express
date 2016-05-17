@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var session = require('express-session');
 
 
 var db = require('./app/config');
@@ -10,11 +11,13 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
+var crypto = require('crypto');
 
 var app = express();
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
+app.use( session( { secret: 'keyboard cat', cookie: { maxAge: 60000 } } ) );
 app.use(partials());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
@@ -22,36 +25,47 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-
-var isAuthenticated = function (req, res, next) {
-  // if(false) {
-  //   return next();
-  // }
-
-  res.redirect('/login');
+var isAuthenticated = function (req, res, next, fail) {
+  var sess = req.session;
+  if (!sess.username) { //check db for valid entry otherwise redirect
+    fail();
+  } else {
+    console.log('Authenticated as:', sess.username);
+    next();
+  }
 };
 
-
-app.get('/',
-function(req, res) {
-  res.render('index'); //looks inside the view folder for this specific file index.ejs //the partials get 'included' in the .ejs files 
-                        // if we have repeated code (uses templating)
+var ifNotAuthenticatedSendToLogin = function(req, res, successRenderPage) {
+  isAuthenticated(req, res, function() {
+    console.log('rendering', successRenderPage);
+    res.render(successRenderPage);
+  }, function() {
+    console.log('redirecting to login');
+    res.redirect('login');
+    res.end();  
+  });
+};
+app.get('/', function(req, res) {
+  ifNotAuthenticatedSendToLogin(req, res, 'index');
 });
 
-app.get('/create', isAuthenticated,
-function(req, res) {
-  res.render('index');
+app.get('/create', function(req, res) {
+  ifNotAuthenticatedSendToLogin(req, res, 'create');
 });
 
-app.get('/links', 
-function(req, res) {
-  Links.reset().fetch().then(function(links) {  //links is a collection of link models
-    res.status(200).send(links.models);
+app.get('/links', function(req, res) {
+  isAuthenticated(req, res, () => {
+    Links.reset().fetch().then(function(links) {  //links is a collection of link models
+      res.status(200).send(links.models);
+    });
+  }, () => {
+    console.log('redirecting to login');
+    res.redirect('login');
+    res.end();  
   });
 });
 
-app.post('/links', 
-function(req, res) {
+app.post('/links', function(req, res) {
   var uri = req.body.url;
 
   if (!util.isValidUrl(uri)) {
@@ -88,12 +102,41 @@ function(req, res) {
 
 app.get('/login', 
 function(req, res) {
+  console.log('rendering login');
   res.render('index');
 });
 
-app.get('/signup', 
-function(req, res) {
+app.post('/login', function(req, res) {
+
+  console.log('posting');
+  sess = req.session;
+  sess.username = req.body.username;
+  //sess.password = req.body.password; 
+
+
   res.render('index');
+});
+
+app.post('/signup', 
+function(req, res) {
+//bcrypt 
+
+  var username = req.body.username;
+  var password = req.body.password;
+  var hash = crypto.createHash('sha1');
+  hash.update(password);
+  db.knex('users').where({username: username}).count().then(countObj => {
+    var count = countObj[0]['count(*)'];
+    if ( count > 0) {
+      console.log('User already exists');
+    } else {
+      db.knex('users').insert({username: username, password: hash.digest('hex')})
+        .catch(err => console.error('database error:', err));
+
+      res.render('index');
+    }
+  })
+  .catch(e=>{});
 });
 
 /************************************************************/

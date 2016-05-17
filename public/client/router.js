@@ -25,10 +25,10 @@ Shortly.Router = Backbone.Router.extend({
   },
 
   login: function() { //gets triggered in app js when you click the login button
-    this.swapView(new Shortly.createLoginView());
+    this.swapView(new Shortly.loginView());
   },
 
   signup: function() { //gets triggered in app js when you click the login button
-    this.swapView(new Shortly.createSignupView());
+    this.swapView(new Shortly.signupView());
   }
 });

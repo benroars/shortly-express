@@ -1,10 +1,10 @@
-Shortly.createSignupView = Backbone.View.extend({
+Shortly.loginView = Backbone.View.extend({
   className: 'creator',
 
-  template: Templates['signup'], 
+  template: Templates['login'], 
 
   events: {
-    'submit': 'signup'
+    'submit': 'attemptLogin'
   },
 
   render: function() {
@@ -13,8 +13,8 @@ Shortly.createSignupView = Backbone.View.extend({
     return this;
   },
 
-  signup: function(e) {
-    e.preventDefault();
+  attemptLogin: function(e) {
+    // e.preventDefault();
     // var $form = this.$el.find('form .text');
     // var link = new Shortly.Link({ url: $form.val() });
     // link.on('request', this.startSpinner, this);
