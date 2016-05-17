@@ -25,43 +25,121 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-var isAuthenticated = function (req, res, next, fail) {
+// var isAuthenticated = function (req, res, next, fail) {
+//   var sess = req.session;
+//   if (!sess.username) { //check db for valid entry otherwise redirect
+//     fail();
+//   } else {
+//     console.log('Authenticated as:', sess.username);
+//     next();
+//   }
+// };
+
+// var ifNotAuthenticatedSendToLogin = function(req, res, successRenderPage) {
+//   isAuthenticated(req, res, function() {
+//     console.log('rendering', successRenderPage);
+//     res.render(successRenderPage);
+//   }, function() {
+//     console.log('redirecting to login');
+//     res.redirect('login');
+//     res.end();  
+//   });
+// };
+
+/************************************************************/
+// Write your authentication routes here
+/************************************************************/
+
+app.get('/login', 
+function(req, res) {
+  res.render('login');
+});
+
+app.get('/signup', 
+function(req, res) {
+  res.render('signup');
+});
+
+app.post('/login', function(req, res) {
+
   var sess = req.session;
-  if (!sess.username) { //check db for valid entry otherwise redirect
-    fail();
+
+  var username = req.body.username;
+  var password = req.body.password;
+
+  var hash = crypto.createHash('sha1');
+  hash.update(password);
+
+  db.knex('users').where({username: username, password: hash.digest('hex')}).count().then(countObj => {
+    var count = countObj[0]['count(*)'];
+    if ( count === 1) {
+      sess.username = username;
+      res.redirect('/');
+    } else {
+      console.log('Invalid username / password');
+      res.redirect('login');
+    }
+  })
+  .catch(e => console.log('ERROR', e));
+});
+
+app.post('/signup', function(req, res, done) {
+
+  var sess = req.session;
+
+  var username = req.body.username;
+  var password = req.body.password;
+  var hash = crypto.createHash('sha1');
+  hash.update(password);
+  db.knex('users').where({username: username}).count().then(countObj => {
+    var count = countObj[0]['count(*)'];
+    if ( count === 0) {
+      db.knex('users').insert({username: username, password: hash.digest('hex')})
+        .then(result => {
+          sess.username = username;
+          res.redirect('/');
+          //res.end();
+          console.log('sending redirection response');
+        })
+        .catch(err => console.error('database error:', err));
+    } else {
+      console.log('User already exists');
+      res.render('signup');
+      res.end();
+    }
+  })
+  .catch(e => console.log('ERROR', e));
+});
+
+// ----------------------------------------------------------------------------------------
+// Check every endpoint below this line for user authentication ---------------------------
+// ----------------------------------------------------------------------------------------
+
+app.use(function(req, res, next) {
+  var sess = req.session;
+  console.log(sess.username);
+  if (!sess.username) {
+    res.redirect('login');
+    //res.end();
   } else {
-    console.log('Authenticated as:', sess.username);
     next();
   }
-};
+});
 
-var ifNotAuthenticatedSendToLogin = function(req, res, successRenderPage) {
-  isAuthenticated(req, res, function() {
-    console.log('rendering', successRenderPage);
-    res.render(successRenderPage);
-  }, function() {
-    console.log('redirecting to login');
-    res.redirect('login');
-    res.end();  
-  });
-};
+
+// Pages that require authentication
+
 app.get('/', function(req, res) {
-  ifNotAuthenticatedSendToLogin(req, res, 'index');
+  res.render('index');
 });
 
 app.get('/create', function(req, res) {
-  ifNotAuthenticatedSendToLogin(req, res, 'create');
+  res.render('index');
 });
 
 app.get('/links', function(req, res) {
-  isAuthenticated(req, res, () => {
-    Links.reset().fetch().then(function(links) {  //links is a collection of link models
-      res.status(200).send(links.models);
-    });
-  }, () => {
-    console.log('redirecting to login');
-    res.redirect('login');
-    res.end();  
+  Links.reset().fetch().then(function(links) {  //links is a collection of link models
+    res.status(200).send(links.models);
   });
 });
 
@@ -94,76 +172,6 @@ app.post('/links', function(req, res) {
       });
     }
   });
-});
-
-/************************************************************/
-// Write your authentication routes here
-/************************************************************/
-
-app.get('/login', 
-function(req, res) {
-  console.log('rendering login');
-  res.render('index');
-});
-
-app.post('/login', function(req, res) {
-
-  console.log('posting');
-  var sess = req.session;
-  //sess.username = req.body.username;
-
-  var username = req.body.username;
-  var password = req.body.password;
-
-  var hash = crypto.createHash('sha1');
-  hash.update(password);
-
-  db.knex('users').where({username: username, password: hash.digest('hex')}).count().then(countObj => {
-    var count = countObj[0]['count(*)'];
-    console.log('at count: ', count);
-    if ( count === 1) {
-      sess.username = username;
-      console.log('Logged in as:', username);
-      
-      res.redirect('/');
-      res.end();
-
-    } else {
-
-      console.log('Invalid username / password');
-      res.redirect('/login');
-    }
-  })
-  .catch(e => console.log('ERROR', e));
-
-  // res.render('index');
-});
-
-app.post('/signup', function(req, res, done) {
-//bcrypt 
-
-  var sess = req.session;
-
-  var username = req.body.username;
-  var password = req.body.password;
-  var hash = crypto.createHash('sha1');
-  hash.update(password);
-  db.knex('users').where({username: username}).count().then(countObj => {
-    var count = countObj[0]['count(*)'];
-    if ( count === 0) {
-      db.knex('users').insert({username: username, password: hash.digest('hex')})
-        .catch(err => console.error('database error:', err));
-      sess.username = username;
-      res.redirect('/');
-      res.end();
-    } else {
-      console.log('User already exists');
-      res.render('index');
-      res.end();
-    }
-    done();
-  })
-  .catch(e => console.log('ERROR', e));
 });
 
 /************************************************************/
