@@ -110,11 +110,31 @@ app.post('/login', function(req, res) {
 
   console.log('posting');
   sess = req.session;
-  sess.username = req.body.username;
-  //sess.password = req.body.password; 
+  //sess.username = req.body.username;
 
+  var username = req.body.username;
+  var password = req.body.password;
 
-  res.render('index');
+  var hash = crypto.createHash('sha1');
+  hash.update(password);
+
+  db.knex('users').where({username: username, password: hash.digest('hex')}).count().then(countObj => {
+    var count = countObj[0]['count(*)'];
+    console.log('at count: ', count);
+    if ( count === 1) {
+      sess.username = username;
+      console.log('Logged in as:', username);
+      res.redirect('/');
+
+    } else {
+
+      console.log('Invalid username / password');
+      res.redirect('login');
+    }
+  })
+  .catch(e => console.log('ERROR', e));
+
+  // res.render('index');
 });
 
 app.post('/signup', 
