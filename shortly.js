@@ -140,27 +140,28 @@ app.post('/login', function(req, res) {
 app.post('/signup', function(req, res, done) {
 //bcrypt 
 
+  var sess = req.session;
+
   var username = req.body.username;
   var password = req.body.password;
   var hash = crypto.createHash('sha1');
   hash.update(password);
   db.knex('users').where({username: username}).count().then(countObj => {
     var count = countObj[0]['count(*)'];
-    if ( count > 0) {
-      console.log('User already exists');
-      res.render('/signup');
-    } else {
+    if ( count === 0) {
       db.knex('users').insert({username: username, password: hash.digest('hex')})
         .catch(err => console.error('database error:', err));
-
       sess.username = username;
-
       res.redirect('/');
-
+      //res.writeHead(300, {location: '/'});
+      res.end();
+    } else {
+      console.log('User already exists');
+      res.render('index');
+      res.end();
     }
-    done();
   })
-  .catch(e=>{});
+  .catch(e => console.log('ERROR', e));
 });
 
 /************************************************************/
