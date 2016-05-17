@@ -109,7 +109,7 @@ function(req, res) {
 app.post('/login', function(req, res) {
 
   console.log('posting');
-  sess = req.session;
+  var sess = req.session;
   //sess.username = req.body.username;
 
   var username = req.body.username;
@@ -137,8 +137,7 @@ app.post('/login', function(req, res) {
   // res.render('index');
 });
 
-app.post('/signup', 
-function(req, res) {
+app.post('/signup', function(req, res, done) {
 //bcrypt 
 
   var username = req.body.username;
@@ -149,12 +148,17 @@ function(req, res) {
     var count = countObj[0]['count(*)'];
     if ( count > 0) {
       console.log('User already exists');
+      res.render('/signup');
     } else {
       db.knex('users').insert({username: username, password: hash.digest('hex')})
         .catch(err => console.error('database error:', err));
 
-      res.render('index');
+      sess.username = username;
+
+      res.redirect('/');
+
     }
+    done();
   })
   .catch(e=>{});
 });
