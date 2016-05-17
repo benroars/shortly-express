@@ -291,12 +291,25 @@ describe('', function() {
     var requestWithSession = request.defaults({jar: true});
 
     beforeEach(function(done) {
-      new User({
-        'username': 'Phillip',
-        'password': 'Phillip'
-      }).save().then(function() {
+      // new User({
+      //   'username': 'Phillip',
+      //   'password': 'Phillip'
+      // }).save().then(function() {
+      //   done();
+      // });
+      var options = {
+        'method': 'POST',
+        'uri': 'http://127.0.0.1:4568/signup',
+        'json': {
+          'username': 'Phillip',
+          'password': 'Phillip'
+        }
+      };
+
+      requestWithSession(options, function(error, res, body) {
         done();
       });
+
     });
 
     it('Logs in existing users', function(done) {

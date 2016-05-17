@@ -124,12 +124,14 @@ app.post('/login', function(req, res) {
     if ( count === 1) {
       sess.username = username;
       console.log('Logged in as:', username);
+      
       res.redirect('/');
+      res.end();
 
     } else {
 
       console.log('Invalid username / password');
-      res.redirect('login');
+      res.redirect('/login');
     }
   })
   .catch(e => console.log('ERROR', e));
@@ -153,13 +155,13 @@ app.post('/signup', function(req, res, done) {
         .catch(err => console.error('database error:', err));
       sess.username = username;
       res.redirect('/');
-      //res.writeHead(300, {location: '/'});
       res.end();
     } else {
       console.log('User already exists');
       res.render('index');
       res.end();
     }
+    done();
   })
   .catch(e => console.log('ERROR', e));
 });
